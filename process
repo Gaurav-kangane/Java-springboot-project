@@ -6,3 +6,14 @@ MYSQL_HOST=jdbc:database-1.can0ws8oqjny.us-east-1.rds.amazonaws.com:3306/datasto
 MYSQL_USERNAME=admin \
 MYSQL_PASSWORD=Cloud123 \
 nohup java -jar ./datastore-0.0.7.jar > /var/log/app/nohup.out 2>&1 &
+
+
+
+## sonanr qube webhook
+#path ==adminstration/configuration/webhook
+http://3.84.155.178:8080//sonarqube-webhook/
+
+
+##for sonar token 
+
+path === adminstartion/security/users
