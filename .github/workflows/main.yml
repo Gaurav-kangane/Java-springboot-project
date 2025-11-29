@@ -20,8 +20,11 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
           ############
-      - name: Setup SonarScanner
-        uses: sonarsource/sonar-scanner-action@v1
+      - name: Setup SonarScanner CLI
+        uses: sonarsource/sonar-scanner-action@v2
+        with:
+          version: '4.9.3.5689'  # or latest
+
 
       - name: Run SonarScanner 
         env:
