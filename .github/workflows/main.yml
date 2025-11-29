@@ -19,17 +19,24 @@ jobs:
         with:
           java-version: '17'
           distribution: 'temurin'
+          ############
+      - name: Install Sonar Scanner
+        run: |
+          curl -sSLo sonar-scanner.zip https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.9.3.5689-linux.zip
+          unzip -qq sonar-scanner.zip
+          export PATH=$PWD/sonar-scanner-4.9.3.5689-linux/bin:$PATH
 
       # 3️⃣ Clean & Package + SonarQube Scan
       - name: Sonar Scan
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         run: |
-          mvn -Dmaven.test.failure.ignore=true clean verify sonar:sonar \
+          sonar-scanner \
             -Dsonar.projectKey=myproject \
+            -Dsonar.sources=. \
             -Dsonar.host.url=${{ secrets.SONAR_URL }} \
-            -Dsonar.login=${{ secrets.SONAR_TOKEN }} \
-            -Dsonar.scanner.metadataFile=target/site/sonar/report-task.txt
+            -Dsonar.login=${{ secrets.SONAR_TOKEN }}
+
 
 
       # qulity gate
@@ -38,8 +45,7 @@ jobs:
         timeout-minutes: 5
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        with:
-          scanMetadataReportFile: target/site/sonar/report-task.txt
+
 
       # 5️⃣ Build final JAR
       - name: Build JAR
