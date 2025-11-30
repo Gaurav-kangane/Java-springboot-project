@@ -1,0 +1,79 @@
+Backend Process
+yum install git -y
+git clone https://github.com/CloudTechDevOps/Java-springboot-project.git
+
+yum install maven -y 
+
+cd Java-springboot-project/
+
+mvn clean package -Dspring.profiles.active=build
+
+cd target/
+move jara file into /root directory
+mv datastore-0.0.7.jar /root
+
+cd /root
+## run below command
+MYSQL_HOST=jdbc:replace with your rds endpoint:3306/datastore?createDatabaseIfNotExist=true \
+MYSQL_USERNAME=admin \
+MYSQL_PASSWORD=Cloud123 \
+nohup java -jar ./datastore-0.0.7.jar > /var/log/app/nohup.out 2>&1 &
+
+####after above process run below command
+nohup java \
+  -Dspring.datasource.url=jdbc:replace with your rds endpoint:3306/datastore?createDatabaseIfNotExist=true \
+  -Dspring.datasource.username=admin \
+  -Dspring.datasource.password=Cloud123 \
+  -Dspring.jpa.properties.hibernate.dialect=org.hibernate.dialect.MySQL8Dialect \
+  -jar datastore-0.0.7.jar \
+  > /var/log/app/nohup.out 2>&1 &
+
+check your jar is connected to database
+ps aux | grep jar
+
+
+
+############################################################################################################################################
+
+Frontend process
+
+
+yum install git -y
+git clone https://github.com/CloudTechDevOps/Java-springboot-project.git
+
+cd Java-springboot-project
+cd frontend/
+
+sudo dnf install -y python3-pip
+python3 -m venv venv
+source venv/bin/activate
+pip install --upgrade pip
+pip install streamlit requests
+
+vi /etc/systemd/system/frontend.service
+### write below code to frontend.service and also add your backend url to Environment
+
+[Unit]
+Description=Streamlit Frontend App
+After=network.target
+
+[Service]
+User=root
+WorkingDirectory=/root/Java-springboot-project/frontend
+ExecStart=/root/Java-springboot-project/frontend/venv/bin/python -m streamlit run /root/Java-springboot-project/frontend/app.py --server.port=8501 --server.address=0.0.0.0
+Environment=API_URL=http://35.154.36.113:8084
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+###
+
+systemctl daemon-reload
+systemctl enable frontend
+systemctl start frontend
+systemctl status frontend
+
+
+#to exit venv give exit 
+# to activate source venv/bin/activate
