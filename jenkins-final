@@ -1,3 +1,6 @@
+##################### Backend Process #####################################
+
+
 pipeline {
     agent any
 
@@ -93,5 +96,80 @@ pipeline {
         failure {
             echo '❌ Pipeline Failed'
         }
+    }
+}
+
+
+
+##################################### Frontend Process #####################################
+
+pipeline{
+    agent{
+        label 'frontend'
+    }
+    
+    stages{
+        
+        stage('root'){
+            steps{
+                sh 'sudo su -'
+            }
+        }
+        
+        stage('gitclone'){
+            steps{
+                git branch: 'main', url: 'https://github.com/CloudTechDevOps/Java-springboot-project.git'
+            }
+        }
+        
+        stage('directory'){
+            steps{
+                dir('frontend'){
+                    sh '''
+                            sudo dnf install -y python3-pip
+                            python3 -m venv venv
+                            source venv/bin/activate
+                            pip install --upgrade pip
+                            pip install streamlit requests
+                       '''
+                }
+            }
+        }
+        
+        stage('deploy frontend'){
+            steps{
+                sh '''
+                    sudo bash -c 'cat > /etc/systemd/system/frontend.service <<EOF
+                            [Unit]
+                            Description=Streamlit Frontend App
+                            After=network.target
+                            
+                            [Service]
+                            User=root
+                            WorkingDirectory=/home/ec2-user/workspace/pipeline-2/frontend
+                            ExecStart=/home/ec2-user/workspace/pipeline-2/frontend/venv/bin/python -m streamlit run /home/ec2-user/workspace/pipeline-2/frontend/app.py --server.port=8501 --server.address=0.0.0.0
+                            Environment=API_URL="http://13.232.27.210:8084"
+                            Restart=always
+                            RestartSec=5
+                            
+                            [Install]
+                            WantedBy=multi-user.target
+                            EOF'
+                    
+                    '''
+            }
+        }
+        
+        stage('start server'){
+            steps{
+                sh '''
+                    sudo systemctl daemon-reload
+                    sudo systemctl enable frontend
+                    sudo systemctl restart frontend
+                    sudo systemctl status frontend
+
+                    '''
+            }
+        }   
     }
 }
