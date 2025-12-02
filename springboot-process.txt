@@ -74,6 +74,8 @@ systemctl enable frontend
 systemctl start frontend
 systemctl status frontend
 
+#http://IP-address:8501
 
 #to exit venv give exit 
+
 # to activate source venv/bin/activate
