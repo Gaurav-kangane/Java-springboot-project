@@ -51,15 +51,15 @@ jobs:
             [Unit]
             Description=Streamlit Frontend App
             After=network.target
-
+            
             [Service]
-            User=ec2-user
-            WorkingDirectory=/home/ec2-user/frontend
-            ExecStart=/home/ec2-user/frontend/venv/bin/python -m streamlit run /home/ec2-user/frontend/app.py --server.port=8501 --server.address=0.0.0.0
-            Environment=API_URL="http://13.235.238.202:8084"
+            User=root
+            WorkingDirectory=/root/Java-springboot-project/frontend
+            ExecStart=/root/Java-springboot-project/frontend/venv/bin/python -m streamlit run /root/Java-springboot-project/frontend/app.py --server.port=8501 --server.address=0.0.0.0
+            Environment=API_URL=http://13.235.238.202:8084
             Restart=always
             RestartSec=5
-
+            
             [Install]
             WantedBy=multi-user.target
             EOF'
