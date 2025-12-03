@@ -30,7 +30,7 @@ jobs:
             org.sonarsource.scanner.maven:sonar-maven-plugin:4.0.0.4121:sonar \
             -DskipTests \
             -Dsonar.projectKey=myproject \
-            -Dsonar.host.url=http://13.127.45.22:9000 \
+            -Dsonar.host.url=http://13.235.45.29:9000 \
             -Dsonar.login=${{ secrets.SONAR_TOKEN }}
 
       # 5️⃣ Build final JAR
@@ -87,6 +87,3 @@ jobs:
               --server.port=8084 > /var/log/app/nohup.out 2>&1 &
 
             echo "New Application Started"
-
-  
-
