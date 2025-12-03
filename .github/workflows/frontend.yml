@@ -22,7 +22,7 @@ jobs:
           username: ec2-user
           key: ${{ secrets.EC2_KEY }}
           source: "frontend/*"
-          target: "/home/ec2-user/frontend/"
+          target: "/ec2-user/frontend/"
 
       # SSH into EC2 and deploy
       - name: Configure & Deploy Frontend on EC2
@@ -54,8 +54,8 @@ jobs:
             
             [Service]
             User=root
-            WorkingDirectory=/home/ec2-user/frontend
-            ExecStart=/home/ec2-user/frontend/venv/bin/python -m streamlit run /root/Java-springboot-project/frontend/app.py --server.port=8501 --server.address=0.0.0.0
+            WorkingDirectory=/ec2-user/frontend
+            ExecStart=/ec2-user/frontend/venv/bin/python -m streamlit run /root/Java-springboot-project/frontend/app.py --server.port=8501 --server.address=0.0.0.0
             Environment=API_URL=http://13.235.238.202:8084
             Restart=always
             RestartSec=5
