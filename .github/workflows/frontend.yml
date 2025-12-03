@@ -1,74 +1,50 @@
-name: Frontend CI/CD Pipeline
+- name: Run Frontend Pipeline on EC2
+  uses: appleboy/ssh-action@v1.1.0
+  with:
+    host: ${{ secrets.EC2_HOST }}
+    username: ec2-user
+    key: ${{ secrets.EC2_KEY }}
+    script: |
+      echo "Running Jenkins pipeline steps on EC2"
 
-on:
-  workflow_dispatch:
-  push:
-    branches: [ "main" ]
+      # ===== Stage: root =====
+      sudo su -
 
-jobs:
-  deploy-frontend:
-    runs-on: ubuntu-latest
+      # ===== Stage: gitclone =====
+      sudo rm -rf /home/ec2-user/workspace
+      mkdir -p /home/ec2-user/workspace
+      cd /home/ec2-user/workspace
+      git clone -b main https://github.com/CloudTechDevOps/Java-springboot-project.git
+      cd Java-springboot-project
 
-    steps:
-      # Checkout repository
-      - name: Checkout Source Code
-        uses: actions/checkout@v4
+      # ===== Stage: directory =====
+      cd frontend
+      sudo dnf install -y python3-pip
+      python3 -m venv venv
+      source venv/bin/activate
+      pip install --upgrade pip
+      pip install streamlit requests
 
-      # Upload frontend folder to EC2
-      - name: Upload Frontend Code to EC2
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.EC2_HOST_IP }}
-          username: ec2-user
-          key: ${{ secrets.EC2_KEY }}
-          source: "frontend/*"
-          target: "/root/frontend/"
+      # ===== Stage: deploy frontend =====
+      sudo bash -c 'cat > /etc/systemd/system/frontend.service <<EOF
+[Unit]
+Description=Streamlit Frontend App
+After=network.target
 
-      # SSH into EC2 and deploy
-      - name: Configure & Deploy Frontend on EC2
-        uses: appleboy/ssh-action@v1.1.0
-        with:
-          host: ${{ secrets.EC2_HOST_IP }}
-          username: ec2-user
-          key: ${{ secrets.EC2_KEY }}
-          script: |
-            echo "Updating Python and Virtual Environment..."
+[Service]
+User=root
+WorkingDirectory=/home/ec2-user/workspace/Java-springboot-project/frontend
+ExecStart=/home/ec2-user/workspace/Java-springboot-project/frontend/venv/bin/python -m streamlit run /home/ec2-user/workspace/Java-springboot-project/frontend/app.py --server.port=8501 --server.address=0.0.0.0
+Environment=API_URL="http://13.232.27.210:8084"
+Restart=always
+RestartSec=5
 
-            sudo dnf install -y python3 python3-pip
+[Install]
+WantedBy=multi-user.target
+EOF'
 
-            cd /root/frontend
-
-            # Create virtual environment
-            python3 -m venv venv
-            source venv/bin/activate
-
-            pip install --upgrade pip
-            pip install streamlit requests
-
-            echo "Creating systemd service..."
-
-            sudo bash -c 'cat > /etc/systemd/system/frontend.service <<EOF
-            [Unit]
-            Description=Streamlit Frontend App
-            After=network.target
-            
-            [Service]
-            User=root
-            WorkingDirectory=/root/frontend
-            ExecStart=/root/frontend/venv/bin/python -m streamlit run /root/frontend/app.py --server.port=8501 --server.address=0.0.0.0
-            Environment=API_URL=http://13.235.238.202:8084
-            Restart=always
-            RestartSec=5
-            
-            [Install]
-            WantedBy=multi-user.target
-            EOF'
-
-            echo "Reloading & Starting frontend service..."
-
-            sudo systemctl daemon-reload
-            sudo systemctl enable frontend
-            sudo systemctl restart frontend
-            sudo systemctl status frontend --no-pager
-
-            echo "Frontend deployment completed"
+      # ===== Stage: start server =====
+      sudo systemctl daemon-reload
+      sudo systemctl enable frontend
+      sudo systemctl restart frontend
+      sudo systemctl status frontend --no-pager
