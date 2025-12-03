@@ -1,0 +1,54 @@
+######### Java SpringBoot Project using Github Actions #############
+
+Steps 
+Launch ec2 server minimum 4 gb ram
+
+sudo yum install git -y
+sudo yum install maven -y
+
+#Launch an t2.medium instance with allow port 9000 
+
+amazon-linux-extras install java-openjdk11 -y   #if amzon linux 2
+
+sudo dnf install java-11-amazon-corretto  # if amazon linux 2023
+
+cd /opt/ #switch to opt directory
+sudo wget https://binaries.sonarsource.com/Distribution/sonarqube/sonarqube-8.9.6.50800.zip
+sudo unzip sonarqube-8.9.6.50800.zip
+
+#sonarqube has to run with user only 
+sudo useradd sonar
+sudo chown sonar:sonar sonarqube-8.9.6.50800 -R
+sudo chmod 777 sonarqube-8.9.6.50800 -R
+
+passwd sonar (create password)
+su - sonar (log in as sonar)
+
+#run this on server manually
+	
+sh /opt/sonarqube-8.9.6.50800/bin/linux-x86-64/sonar.sh status
+
+cd sonarqube-8.9.6.50800/
+cd bin/
+cd linux-x86-64/
+ 
+to start ----- sh sonar.sh start or ./sonar.sh start
+to check status ----- sh sonar.sh status
+
+	
+
+#to access 
+public-ip:9000
+user=admin & password=admin
+
+note : after login we need to change our existing password to custom password 
+
+log in sonarqube and then go to administration , go to security , go to users, then generate tokens give name and generate token
+copy that token e.g 33ba8be9b1fccf71ae5d4e63c0ddfeac3ba45421
+
+In github project repo go to setting of the repo and to go Secrets and variables and then Actions and add the secrets
+
+create .github/workflows/main.yml folder and add code in main.yml
+
+then go to action and run workflow
+
