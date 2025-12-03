@@ -55,15 +55,17 @@ jobs:
           username: ec2-user
           key: ${{ secrets.EC2_KEY }}
           script: |
-            PIDS=$(pgrep -f datastore-0.0.7.jar || true)
-            if [ -n "$PIDS" ]; then
-              echo "Stopping current app(s): $PIDS"
-              for pid in $PIDS; do
-                sudo kill -9 $pid || echo "PID $pid already stopped"
-              done
+            PID=$(pgrep -f datastore-0.0.7.jar || true)
+            if [ -n "$PID" ]; then
+              echo "Stopping app PID: $PID"
+              sudo kill -9 $PID >/dev/null 2>&1 || true
             else
               echo "No running application"
             fi
+            sleep 2
+
+
+       
 
       # 8️⃣ Run New Application
       - name: Run Application on EC2
