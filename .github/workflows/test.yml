@@ -7,7 +7,7 @@ on:
 
 env:
   JAR_NAME: datastore-0.0.7.jar
-  SONAR_HOST_URL: "http://<YOUR-SONARQUBE-SERVER>"
+  SONAR_HOST_URL: "http://13.235.45.29:9000"
   SONAR_PROJECT_KEY: "datastore"
   SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
