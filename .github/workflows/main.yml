@@ -1,0 +1,89 @@
+name: Full CI/CD Pipeline
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  build-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1️⃣ Checkout SCM
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      # 2️⃣ Setup Java 17
+      - name: Setup Java 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      # 3️⃣ Clean & Package + SonarQube Scan
+      - name: Sonar Scan
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: |
+          mvn clean verify \
+            org.sonarsource.scanner.maven:sonar-maven-plugin:4.0.0.4121:sonar \
+            -DskipTests \
+            -Dsonar.projectKey=myproject \
+            -Dsonar.host.url=http://13.235.45.29:9000 \
+            -Dsonar.login=${{ secrets.SONAR_TOKEN }}
+
+      # 5️⃣ Build final JAR
+      - name: Build JAR
+        run: mvn clean package -DskipTests=true
+
+      # 6️⃣ Copy JAR to EC2
+      - name: Upload JAR to EC2
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ec2-user
+          key: ${{ secrets.EC2_KEY }}
+          source: "target/datastore-0.0.7.jar"
+          target: "/home/ec2-user/app/"
+
+      # 7️⃣ Stop Old Application
+      - name: Stop Running App on EC2
+        uses: appleboy/ssh-action@v1.1.0
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ec2-user
+          key: ${{ secrets.EC2_KEY }}
+          script: |
+            PIDS=$(pgrep -f datastore-0.0.7.jar || true)
+            if [ -n "$PIDS" ]; then
+              echo "Stopping current app(s): $PIDS"
+              for pid in $PIDS; do
+                sudo kill -9 $pid || echo "PID $pid already stopped"
+              done
+            else
+              echo "No running application"
+            fi
+
+      # 8️⃣ Run New Application
+      - name: Run Application on EC2
+        uses: appleboy/ssh-action@v1.1.0
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ec2-user
+          key: ${{ secrets.EC2_KEY }}
+          script: |
+            sudo mkdir -p /var/log/app
+            sudo chown ec2-user:ec2-user /var/log/app
+            sudo chmod 777 /var/log/app
+
+            cd /home/ec2-user/app
+
+            nohup java -jar datastore-0.0.7.jar \
+              --MYSQL_HOST="jdbc:mysql://database-1.cp4s0mqyo7x3.ap-south-1.rds.amazonaws.com:3306/datastore?createDatabaseIfNotExist=true" \
+              --MYSQL_USERNAME="admin" \
+              --MYSQL_PASSWORD="Cloud123" \
+              --LOG_FILE_PATH="/var/log/app/datastore.log" \
+              --server.port=8084 > /var/log/app/nohup.out 2>&1 &
+
+            echo "New Application Started"
